@@ -1,0 +1,21 @@
+{
+  "name": "pinecone-codex-plugins",
+  "interface": {
+    "displayName": "Pinecone for Codex"
+  },
+  "plugins": [
+    {
+      "name": "pinecone",
+      "source": {
+        "source": "url",
+        "url": "https://github.com/pinecone-io/pinecone-codex-plugin",
+        "ref": "main"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Productivity"
+    }
+  ]
+}

@@ -1,0 +1,48 @@
+{
+  "name": "pinecone",
+  "description": "Pinecone vector database integration for Codex. Streamline your Pinecone development with reusable skills for managing vector indexes, querying data, building RAG applications, and rapid prototyping. Includes the Pinecone MCP server for creating, describing, upserting, and searching indexes directly from Codex. Perfect for developers building semantic search, RAG applications, recommendation systems, and other vector-based applications with Pinecone.",
+  "version": "0.1.0",
+  "author": {
+    "name": "Pinecone",
+    "url": "https://www.pinecone.io"
+  },
+  "homepage": "https://www.pinecone.io",
+  "repository": "https://github.com/pinecone-io/pinecone-codex-plugin",
+  "license": "MIT",
+  "keywords": [
+    "pinecone",
+    "semantic search",
+    "retrieval",
+    "vector search",
+    "vector database",
+    "retrieval augmented generation",
+    "rag",
+    "agentic rag",
+    "sparse search",
+    "assistant",
+    "pinecone assistant",
+    "rag chatbot",
+    "full text search",
+    "bm25",
+    "hybrid search"
+  ],
+  "skills": "./skills/",
+  "mcpServers": "./.mcp.json",
+  "interface": {
+    "displayName": "Pinecone",
+    "shortDescription": "Vector database skills and MCP for Codex",
+    "longDescription": "Bundle of Pinecone skills (quickstart, query, assistant, full-text-search, CLI, MCP reference, docs, help) plus the Pinecone MCP server. Build semantic search, RAG, and hybrid-search apps from Codex without leaving the editor.",
+    "developerName": "Pinecone",
+    "category": "Productivity",
+    "capabilities": ["Read", "Write"],
+    "websiteURL": "https://www.pinecone.io",
+    "privacyPolicyURL": "https://www.pinecone.io/privacy",
+    "termsOfServiceURL": "https://www.pinecone.io/terms",
+    "defaultPrompt": [
+      "Use Pinecone to get me started with a new vector index.",
+      "Create a Pinecone assistant from the files in ./docs and ask it about authentication.",
+      "Query my Pinecone index for relevant context on a topic."
+    ],
+    "brandColor": "#10A37F"
+  }
+}

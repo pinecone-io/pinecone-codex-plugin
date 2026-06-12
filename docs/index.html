@@ -1,0 +1,413 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Pinecone Codex Plugin — Contributor Guide</title>
+<style>
+:root {
+  --bg: #fdfdfc;
+  --fg: #1d1d1f;
+  --muted: #5b5b63;
+  --accent: #10A37F;
+  --border: #e3e3e0;
+  --code-bg: #f4f4f1;
+  --code-fg: #2b2b2e;
+  --warn: #b9531b;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #16161a;
+    --fg: #eaeaea;
+    --muted: #9b9ba1;
+    --accent: #2ecc9b;
+    --border: #2c2c30;
+    --code-bg: #1f1f23;
+    --code-fg: #e6e6e6;
+    --warn: #f0a060;
+  }
+}
+* { box-sizing: border-box; }
+html, body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--fg);
+  font: 16px/1.55 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+}
+main {
+  max-width: 880px;
+  margin: 0 auto;
+  padding: 56px 28px 96px;
+}
+h1 {
+  font-size: 2.1rem;
+  margin: 0 0 8px;
+  letter-spacing: -0.01em;
+}
+h2 {
+  font-size: 1.4rem;
+  margin: 56px 0 12px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--border);
+}
+h3 {
+  font-size: 1.05rem;
+  margin: 28px 0 8px;
+  color: var(--accent);
+}
+p, li { color: var(--fg); }
+.muted { color: var(--muted); }
+.lede { color: var(--muted); font-size: 1.05rem; }
+a { color: var(--accent); }
+code, pre, kbd {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.9em;
+}
+code { background: var(--code-bg); color: var(--code-fg); padding: 1px 5px; border-radius: 4px; }
+pre {
+  background: var(--code-bg);
+  color: var(--code-fg);
+  padding: 14px 16px;
+  border-radius: 6px;
+  overflow-x: auto;
+  border: 1px solid var(--border);
+  font-size: 0.85rem;
+  line-height: 1.45;
+}
+pre code { background: none; padding: 0; }
+table { width: 100%; border-collapse: collapse; margin: 12px 0 18px; }
+th, td { text-align: left; padding: 8px 10px; vertical-align: top; border-bottom: 1px solid var(--border); }
+th { font-weight: 600; color: var(--muted); font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.04em; }
+ul, ol { padding-left: 24px; }
+li { margin: 4px 0; }
+.toc {
+  background: var(--code-bg);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 18px 22px;
+  margin: 24px 0 0;
+}
+.toc ol { margin: 0; padding-left: 20px; }
+.toc li { margin: 3px 0; }
+.diagram {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  white-space: pre;
+  background: var(--code-bg);
+  color: var(--code-fg);
+  padding: 16px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  font-size: 0.82rem;
+  line-height: 1.4;
+  overflow-x: auto;
+}
+.callout {
+  border-left: 3px solid var(--accent);
+  background: var(--code-bg);
+  padding: 12px 16px;
+  margin: 14px 0;
+  border-radius: 0 6px 6px 0;
+}
+.callout.warn { border-left-color: var(--warn); }
+.tag {
+  display: inline-block;
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  background: var(--accent);
+  color: #fff;
+  padding: 2px 7px;
+  border-radius: 3px;
+  vertical-align: middle;
+  margin-left: 6px;
+}
+hr { border: none; border-top: 1px solid var(--border); margin: 48px 0; }
+</style>
+</head>
+<body>
+<main>
+<h1>Pinecone Codex Plugin — Contributor Guide</h1>
+<p class="lede">How this repo is wired up: the sync pipeline from <code>pinecone-io/skills</code>, the contextualization bot, the validators, and the release workflow. Open this file in a browser — it is self-contained.</p>
+
+<nav class="toc" aria-label="Table of contents">
+<strong>Contents</strong>
+<ol>
+  <li><a href="#overview">Overview</a></li>
+  <li><a href="#layout">Repo layout</a></li>
+  <li><a href="#sync">Sync pipeline (upstream → here)</a></li>
+  <li><a href="#contextualize">Contextualization workflow</a></li>
+  <li><a href="#validators">Validators</a></li>
+  <li><a href="#release">Release workflow</a></li>
+  <li><a href="#spec">Codex plugin spec essentials</a></li>
+  <li><a href="#new-skill">Adding a new skill manually</a></li>
+  <li><a href="#troubleshooting">Troubleshooting</a></li>
+</ol>
+</nav>
+
+<h2 id="overview">1. Overview</h2>
+<p>
+Pinecone publishes one base skills library — <a href="https://github.com/pinecone-io/skills">pinecone-io/skills</a> — that is intentionally environment-agnostic.
+The base repo fans out to one downstream plugin repo per agentic IDE: Claude Code, Cursor, Gemini CLI, Kiro, and (this repo) Codex.
+Each downstream repo packages the skills into that IDE's plugin format and runs a "contextualize" GitHub Action to adapt incoming changes to the local conventions before a maintainer merges.
+</p>
+
+<div class="diagram">┌─────────────────────────┐
+│ pinecone-io/skills      │   author edits a skill, pushes to main
+│ (base, IDE-agnostic)    │
+└────────────┬────────────┘
+             │ sync-skills.yml (matrix over downstream repos)
+             ▼
+┌─────────────────────────────────────────────────────────────────┐
+│ Opens PR on:                                                    │
+│   pinecone-io/pinecone-claude-code-plugin                       │
+│   pinecone-io/pinecone-cursor-plugin                            │
+│   pinecone-io/gemini-cli-extension                              │
+│   pinecone-io/kiro-powers                                       │
+│   pinecone-io/pinecone-codex-plugin  ◄── this repo              │
+│ Branch: sync/skills-&lt;run_id&gt;                                    │
+└────────────────────────────┬────────────────────────────────────┘
+                             │ contextualize-skills.yml triggers
+                             ▼
+┌─────────────────────────────────────────────────────────────────┐
+│ Claude Code action reads the inlined Codex conventions, adapts  │
+│ skill files in-place, commits to the PR branch, posts a summary │
+│ comment, generates a per-branch test marketplace.               │
+└────────────────────────────┬────────────────────────────────────┘
+                             │ validate.yml runs on every PR
+                             ▼
+┌─────────────────────────────────────────────────────────────────┐
+│ scripts/check_all.py — manifest, marketplace, skills,           │
+│ source_tags, links. All green = ready for human review.         │
+└────────────────────────────┬────────────────────────────────────┘
+                             │ maintainer merges
+                             ▼
+┌─────────────────────────────────────────────────────────────────┐
+│ release.yml bumps version, updates CHANGELOG, tags vX.Y.Z,      │
+│ creates a GitHub release.                                       │
+└─────────────────────────────────────────────────────────────────┘</div>
+
+<h2 id="layout">2. Repo layout</h2>
+<table>
+<thead><tr><th>Path</th><th>Purpose</th></tr></thead>
+<tbody>
+<tr><td><code>.codex-plugin/plugin.json</code></td><td>Required Codex plugin manifest. Identity, version, install-surface metadata, pointers to <code>skills/</code> and <code>.mcp.json</code>.</td></tr>
+<tr><td><code>.agents/plugins/marketplace.json</code></td><td>Marketplace metadata so users can <code>codex plugin marketplace add pinecone-io/pinecone-codex-plugin</code>.</td></tr>
+<tr><td><code>.mcp.json</code></td><td>Bundled Pinecone MCP server config (<code>npx -y @pinecone-database/mcp</code>).</td></tr>
+<tr><td><code>skills/</code></td><td>One directory per skill. Each has a <code>SKILL.md</code>, optionally <code>references/*.md</code> and <code>scripts/*.py</code>.</td></tr>
+<tr><td><code>scripts/check_*.py</code></td><td>Validators. See <a href="#validators">§5</a>.</td></tr>
+<tr><td><code>.github/workflows/validate.yml</code></td><td>Runs <code>check_all.py</code> on every PR and on pushes to <code>main</code>.</td></tr>
+<tr><td><code>.github/workflows/contextualize-skills.yml</code></td><td>Adapts incoming <code>sync/skills-*</code> PRs to Codex conventions.</td></tr>
+<tr><td><code>.github/workflows/release.yml</code></td><td>On merge to <code>main</code>, bumps version, updates CHANGELOG, tags release.</td></tr>
+<tr><td><code>README.md</code></td><td>User-facing install and usage docs.</td></tr>
+<tr><td><code>CHANGELOG.md</code></td><td>Version history, populated by <code>release.yml</code>.</td></tr>
+<tr><td><code>docs/index.html</code></td><td>This file.</td></tr>
+</tbody>
+</table>
+
+<h2 id="sync">3. Sync pipeline (upstream → here)</h2>
+<p>
+The base repo's <code>.github/workflows/sync-skills.yml</code> fires on every push to <code>main</code> that touches <code>skills/**</code>, plus on manual <code>workflow_dispatch</code>. It diffs <code>HEAD~1..HEAD</code> (or — on dispatch — every file under <code>skills/</code>), copies the changed files into this repo, opens a PR on branch <code>sync/skills-&lt;run_id&gt;</code>, and labels it <code>skill-sync</code>.
+</p>
+<p>
+A <code>PLUGIN_SYNC_PAT</code> personal access token gives the upstream workflow push permission on this repo. The PR body lists the changed files and links to the upstream Actions run. The contextualize workflow takes it from there.
+</p>
+<div class="callout">
+<strong>Adding this repo to the matrix:</strong> once <code>pinecone-io/pinecone-codex-plugin</code> exists on GitHub, the upstream <code>sync-skills.yml</code> needs the repo added to two places — the <code>workflow_dispatch.inputs.target_repo</code> choice list and the <code>strategy.matrix.target</code> array. That edit lives in <code>pinecone-io/skills</code>, not here.
+</div>
+
+<h2 id="contextualize">4. Contextualization workflow</h2>
+<p>
+<code>.github/workflows/contextualize-skills.yml</code> triggers on every <code>pull_request</code> event (opened or synchronized), but the <code>if:</code> gate skips anything whose branch doesn't start with <code>sync/skills-</code>. A second guard skips runs whose last commit was authored by the bot itself, so re-pushes during contextualization don't loop.
+</p>
+<p>
+When the gates pass, the workflow invokes <code>anthropics/claude-code-action@v1</code> with a prompt that <em>inlines</em> the Codex conventions (no separate <code>CLAUDE.md</code>/<code>AGENTS.md</code> needed). The Claude action gets a tight allowed-tools whitelist: <code>Read, Write, Edit, Bash(git:*), Bash(gh pr comment:*), Bash(mv:*), Bash(python3:*)</code>.
+</p>
+<h3>What the bot changes</h3>
+<ul>
+  <li>Strips the <code>pinecone-</code> prefix from <code>name:</code> frontmatter values and from skill directory names.</li>
+  <li>Rewrites cross-skill references in skill bodies to the <code>pinecone:&lt;skill&gt;</code> invocation form.</li>
+  <li>Removes any <code>allowed-tools</code> frontmatter (Claude-only).</li>
+  <li>Removes any <code>AskUserQuestion</code> references (Claude-only tool name).</li>
+  <li>De-emphasizes <code>.env</code> fallback wording (Codex inherits the shell env).</li>
+  <li>Rewrites <code>source_tag=</code> literals in Python scripts to <code>codex_plugin:&lt;skill&gt;[_&lt;operation&gt;]</code>.</li>
+  <li>Runs <code>python3 scripts/check_all.py</code> and fixes anything it flags inside <code>skills/</code>.</li>
+</ul>
+<h3>What the bot does NOT touch</h3>
+<ul>
+  <li><code>.codex-plugin/</code>, <code>.agents/plugins/</code>, <code>.mcp.json</code>, <code>.github/</code>, <code>scripts/</code>, <code>README.md</code>, <code>CHANGELOG.md</code>, <code>docs/</code>, <code>LICENSE</code>.</li>
+  <li>Python logic inside <code>scripts/*.py</code> — only the <code>source_tag</code> string literal is rewritten.</li>
+  <li>The meaning of any skill — only structure, terminology, naming, and source-tag prefixes.</li>
+</ul>
+<h3>Test marketplace</h3>
+<p>
+After contextualization, a separate step generates <code>test-marketplace/.agents/plugins/marketplace.json</code> pointing at the PR's branch via a <code>git-subdir</code> source. A reviewer can install the PR by adding that path as a marketplace, exercising the exact plugin tree the PR ships.
+</p>
+<p>
+The release workflow deletes <code>test-marketplace/</code> on merge so it never ships to <code>main</code>.
+</p>
+
+<h2 id="validators">5. Validators</h2>
+<p>
+All validators are plain Python 3 — stdlib only, no <code>uv</code> or <code>pyyaml</code> needed in CI. Run the whole suite locally:
+</p>
+<pre><code>python3 scripts/check_all.py</code></pre>
+<table>
+<thead><tr><th>Script</th><th>What it enforces</th></tr></thead>
+<tbody>
+<tr>
+  <td><code>check_manifest.py</code></td>
+  <td>
+    <code>.codex-plugin/plugin.json</code> parses; has <code>name</code>, <code>version</code>, <code>description</code>, <code>skills</code>;
+    <code>name</code> is lowercase kebab-case; <code>version</code> is semver;
+    every path field (<code>skills</code>, <code>mcpServers</code>, <code>hooks</code>, <code>apps</code>, <code>interface.composerIcon</code>, <code>interface.logo</code>, <code>interface.screenshots</code>) starts with <code>./</code> and resolves to a real file;
+    <code>interface.brandColor</code> is <code>#RRGGBB</code> if present.
+  </td>
+</tr>
+<tr>
+  <td><code>check_marketplace.py</code></td>
+  <td>
+    <code>.agents/plugins/marketplace.json</code> parses; each entry has <code>name</code>, <code>policy.installation</code>, <code>policy.authentication</code>;
+    each local <code>source.path</code> starts with <code>./</code>, stays inside the repo, points at a directory containing <code>.codex-plugin/plugin.json</code>.
+  </td>
+</tr>
+<tr>
+  <td><code>check_skills.py</code></td>
+  <td>
+    Every <code>skills/*/SKILL.md</code> has YAML frontmatter with <code>name</code> and <code>description</code>;
+    <code>name</code> matches the directory name and does NOT start with <code>pinecone-</code> (catches un-contextualized syncs);
+    no <code>allowed-tools</code> key (Claude-only);
+    <code>description</code> is a single line, ≤ 1000 chars;
+    body has no <code>AskUserQuestion</code> reference.
+  </td>
+</tr>
+<tr>
+  <td><code>check_source_tags.py</code></td>
+  <td>
+    Every <code>source_tag=</code> literal in <code>skills/**/*.py</code> matches
+    <code>^codex_plugin:[a-z0-9_]+(:[a-z0-9_]+)?$</code>.
+    Catches leakage from <code>pinecone_skills:*</code>, <code>claude_code_plugin:*</code>, <code>cursor_plugin:*</code>, etc.
+  </td>
+</tr>
+<tr>
+  <td><code>check_links.py</code></td>
+  <td>
+    Every relative markdown link in skill docs (and <code>README.md</code>) resolves to an existing file inside the repo.
+    HTTP(S), mailto, and anchor-only links are skipped.
+  </td>
+</tr>
+<tr>
+  <td><code>check_all.py</code></td>
+  <td>Thin wrapper that runs all of the above and aggregates exit codes. CI calls this.</td></tr>
+</tbody>
+</table>
+<div class="callout warn">
+<strong>If a validator fails in CI:</strong> the failure message names the file and the rule that tripped. Fix the file (don't relax the rule unless you're changing the conventions deliberately). Common culprits — incoming PR has <code>name: pinecone-foo</code> in a SKILL.md (the contextualize bot didn't run, or the gate skipped it), or a Python script kept its upstream <code>source_tag</code> prefix.
+</div>
+
+<h2 id="release">6. Release workflow</h2>
+<p>
+<code>.github/workflows/release.yml</code> fires on <code>pull_request.types: [closed]</code> against <code>main</code> and only proceeds when <code>github.event.pull_request.merged == true</code>. Bump type is decided by PR labels:
+</p>
+<ul>
+  <li><code>bump:major</code> → <code>X.0.0</code></li>
+  <li><code>bump:minor</code> → <code>X.Y+1.0</code></li>
+  <li>neither (default) → <code>X.Y.Z+1</code></li>
+</ul>
+<p>The job:</p>
+<ol>
+  <li>Reads <code>.codex-plugin/plugin.json</code>, bumps the version, writes it back.</li>
+  <li>Generates changelog bullets from <code>gh pr view --json commits --jq '.commits[].messageHeadline'</code>, filtering out <code>chore:</code> and create-pull-request entries.</li>
+  <li>Inserts a <code>## [X.Y.Z] - YYYY-MM-DD</code> block after the <code># Changelog</code> header.</li>
+  <li>Deletes <code>test-marketplace/</code> if the contextualize workflow left one behind.</li>
+  <li>Commits as <code>github-actions[bot]</code>, pushes the version-bump commit and a <code>v&lt;version&gt;</code> tag.</li>
+  <li>Creates a GitHub release with auto-generated notes.</li>
+</ol>
+
+<h2 id="spec">7. Codex plugin spec essentials</h2>
+<h3><code>.codex-plugin/plugin.json</code> shape</h3>
+<pre><code>{
+  "name": "pinecone",              // required, lowercase kebab-case
+  "version": "0.1.0",              // semver
+  "description": "...",            // user-facing summary
+  "skills": "./skills/",           // path, must start with ./
+  "mcpServers": "./.mcp.json",     // path, must start with ./
+  "interface": {
+    "displayName": "Pinecone",
+    "category": "Productivity",
+    "capabilities": ["Read", "Write"],
+    "defaultPrompt": ["Use Pinecone to ...", "..."],
+    "brandColor": "#10A37F"
+  }
+}</code></pre>
+<p>Path rules: every path is relative to the plugin root, must start with <code>./</code>, and must stay inside the plugin root. Assets (icons, logos, screenshots) belong under <code>./assets/</code> when present.</p>
+
+<h3><code>.agents/plugins/marketplace.json</code> shape</h3>
+<pre><code>{
+  "name": "pinecone-codex-plugins",
+  "interface": { "displayName": "Pinecone for Codex" },
+  "plugins": [
+    {
+      "name": "pinecone",
+      "source": { "source": "local", "path": "./" },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Productivity"
+    }
+  ]
+}</code></pre>
+<p>For Git-backed entries the <code>source</code> object uses <code>"source": "git-subdir"</code> with <code>url</code>, <code>path</code>, and a <code>ref</code> or <code>sha</code>. The contextualize workflow's per-PR test marketplace uses that shape.</p>
+
+<h2 id="new-skill">8. Adding a new skill manually</h2>
+<p>Most skills land via the upstream sync. If you need to add one directly:</p>
+<ol>
+  <li>Create <code>skills/&lt;skill-name&gt;/SKILL.md</code>. The directory name is the slug (bare, no <code>pinecone-</code> prefix).</li>
+  <li>Frontmatter must contain <code>name: &lt;same-as-directory&gt;</code> and a single-line <code>description</code>. No <code>allowed-tools</code> key.</li>
+  <li>If the skill ships Python helpers, put them in <code>skills/&lt;skill-name&gt;/scripts/</code>. Every <code>Pinecone(...)</code> call that sets <code>source_tag=</code> must use <code>codex_plugin:&lt;skill&gt;[_&lt;operation&gt;]</code>.</li>
+  <li>Run <code>python3 scripts/check_all.py</code>. Iterate until green.</li>
+  <li>Update <code>README.md</code>'s skills table.</li>
+  <li>Open a PR. <code>validate.yml</code> will run; the contextualize workflow won't fire (branch isn't <code>sync/skills-*</code>). Merge once green and the release workflow will tag a new version.</li>
+</ol>
+
+<h2 id="troubleshooting">9. Troubleshooting</h2>
+<table>
+<thead><tr><th>Symptom</th><th>Likely cause / fix</th></tr></thead>
+<tbody>
+<tr>
+  <td><code>check_skills.py</code> fails: "name still has <code>pinecone-</code> prefix"</td>
+  <td>An upstream sync landed without the contextualize workflow running (the branch may not start with <code>sync/skills-</code>, or the bot's last commit caused the skip-if-bot guard to fire on a re-push). Re-run the workflow manually or edit the SKILL.md by hand.</td>
+</tr>
+<tr>
+  <td><code>check_skills.py</code> fails: "<code>allowed-tools</code> is a Claude Code field"</td>
+  <td>Upstream copied a Claude-plugin SKILL.md by mistake. Strip the <code>allowed-tools:</code> frontmatter line.</td>
+</tr>
+<tr>
+  <td><code>check_source_tags.py</code> fails with <code>claude_code_plugin:</code> or <code>pinecone_skills:</code></td>
+  <td>The contextualize bot didn't rewrite a tag. Edit the offending <code>.py</code> file and change the prefix to <code>codex_plugin:</code>. Do not change the suffix.</td>
+</tr>
+<tr>
+  <td><code>check_links.py</code> fails on a <code>references/foo.md</code> path</td>
+  <td>The reference file was moved or renamed; update the link or restore the file.</td>
+</tr>
+<tr>
+  <td>Contextualize workflow skipped on a sync PR</td>
+  <td>Check that the branch name starts with <code>sync/skills-</code> exactly. The skip-if-bot guard will also block runs whose last commit is authored by <code>github-actions[bot]</code>; push an empty commit as a human to re-trigger.</td>
+</tr>
+<tr>
+  <td>Release ran but didn't tag</td>
+  <td>The release job only runs when the PR is <em>merged</em> (not just closed). Check the PR's merge state and the workflow logs for the "Determine bump type" step.</td>
+</tr>
+<tr>
+  <td>MCP not loading after install</td>
+  <td>Codex needs <code>npx</code> on PATH; install Node.js. Confirm <code>PINECONE_API_KEY</code> is exported in the same shell that launched Codex.</td>
+</tr>
+</tbody>
+</table>
+
+<hr>
+<p class="muted">Source: <a href="https://github.com/pinecone-io/pinecone-codex-plugin">pinecone-io/pinecone-codex-plugin</a> · base skills: <a href="https://github.com/pinecone-io/skills">pinecone-io/skills</a> · Codex plugin docs: <a href="https://developers.openai.com/codex/plugins/build">developers.openai.com/codex/plugins/build</a>.</p>
+</main>
+</body>
+</html>
