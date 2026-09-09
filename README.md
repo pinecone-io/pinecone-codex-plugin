@@ -106,9 +106,14 @@ powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | ie
 
 ### Install the Pinecone CLI (optional)
 
+> **Upgrading from an older install?** The Pinecone CLI moved from a Homebrew formula to a cask on 2026-03-30. If you installed it before then, remove the old formula first:
+>
+> ```bash
+> brew uninstall pinecone-io/tap/pinecone
+> ```
+
 ```bash
-brew tap pinecone-io/tap
-brew install pinecone-io/tap/pinecone
+brew install --cask pinecone-io/tap/pinecone
 ```
 
 ## Skills
