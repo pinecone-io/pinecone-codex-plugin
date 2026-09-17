@@ -157,7 +157,7 @@ Full MCP docs: [Pinecone MCP Server Guide](https://docs.pinecone.io/guides/opera
 
 ## Contributing
 
-Skills are not authored here. They are authored in [`pinecone-io/skills`](https://github.com/pinecone-io/skills) and rendered for this plugin by `tools/build.py` against `targets/codex.yaml`, which holds every Codex-specific value (skill names, the `codex_plugin:` source tag, and the per-target wording). The sync workflow there opens a PR on the `sync/skills` branch for a maintainer to review and merge.
+Skills are not authored here. They are authored in [`pinecone-io/skills`](https://github.com/pinecone-io/skills) and rendered for this plugin by `tools/build.py` against `targets/codex.yaml`, which holds every Codex-specific value. The sync workflow there opens a PR on the `sync/skills` branch for a maintainer to review and merge.
 
 That means edits to `skills/` in this repo are overwritten by the next sync. Change the skill in `pinecone-io/skills`, or change `targets/codex.yaml` if the difference is Codex-specific. Everything outside `skills/` is owned here, and the validators in `scripts/check_*.py` run on every PR and document the conventions.
 

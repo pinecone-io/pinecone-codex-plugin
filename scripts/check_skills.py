@@ -3,7 +3,7 @@
 
 - frontmatter parses, has `name` and `description`
 - `name` matches parent directory name
-- `name` does NOT start with `pinecone-` (catches un-contextualized syncs)
+- `name` does NOT start with `pinecone-` (catches a mis-rendered sync)
 - no `allowed-tools` frontmatter key (Codex doesn't use it)
 - `description` is a single line, <=1000 chars
 - body does not reference `AskUserQuestion`
@@ -71,7 +71,7 @@ def main() -> int:
         name = fm.get("name", "")
         if name.startswith("pinecone-"):
             errors.append(
-                f"{rel}: name {name!r} still has `pinecone-` prefix — needs contextualization"
+                f"{rel}: name {name!r} still has `pinecone-` prefix — check skill_name in targets/codex.yaml upstream"
             )
         if name and name != skill_dir.name:
             errors.append(
