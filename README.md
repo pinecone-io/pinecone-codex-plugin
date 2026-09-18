@@ -1,13 +1,13 @@
 # Pinecone Plugin for Codex
 
-A [Codex](https://developers.openai.com/codex) plugin that integrates [Pinecone](https://www.pinecone.io) vector database capabilities directly into your Codex session — eight reusable skills plus the official Pinecone MCP server, ready to install in a single step.
+A [Codex](https://developers.openai.com/codex) plugin that integrates [Pinecone](https://www.pinecone.io) vector database capabilities directly into your Codex session — nine reusable skills plus the official Pinecone MCP server, ready to install in a single step.
 
 ## Features
 
 - **Pinecone Assistant** — fully managed RAG service for document Q&A with citations
 - **Pinecone MCP server** — bundled, no extra setup; gives Codex tools to list, describe, create, upsert, and search indexes
-- **Full-text search** — schema design, safe bulk ingestion, and BM25 / hybrid query construction over Pinecone's FTS preview API
-- **Quickstart, query, CLI, docs, help, MCP reference** — bundled skills covering the common Pinecone workflows
+- **Full-text search** — schema design, safe bulk ingestion, and BM25 / hybrid query construction over Pinecone's FTS document-schema API
+- **Quickstart, query, CLI, docs, help, MCP reference, n8n** — bundled skills covering the common Pinecone workflows
 - **Natural language friendly** — skills recognize phrases like "create an assistant from my docs," "query my index for X," "upload these files," without forcing slash-command syntax
 
 ## Installation
@@ -121,10 +121,11 @@ After installing, Codex will surface these skills. You can invoke them with `@pi
 | `pinecone:quickstart` | Step-by-step onboarding: create an integrated index, upsert data, run your first search. |
 | `pinecone:query` | Search integrated indexes using natural language via the Pinecone MCP. |
 | `pinecone:assistant` | Create, upload to, sync, chat with, and search a Pinecone Assistant. Natural-language driven. |
-| `pinecone:full-text-search` | Build a BM25 / hybrid full-text-search index — schema design, safe bulk ingestion, query construction. Preview API. |
+| `pinecone:full-text-search` | Build a BM25 / hybrid full-text-search index — schema design, safe bulk ingestion, query construction. Needs the `pinecone` Python SDK 10.0.0 or later. |
 | `pinecone:cli` | Use the `pc` CLI for terminal-based index and vector management across all index types. |
 | `pinecone:mcp` | Reference for all bundled Pinecone MCP tools and their parameters. |
 | `pinecone:docs` | Curated links to official Pinecone documentation, organized by topic. |
+| `pinecone:n8n` | Build n8n workflows with the Pinecone Assistant or Vector Store node, including full workflow JSON. |
 
 ## Bundled MCP tools
 
@@ -156,7 +157,9 @@ Full MCP docs: [Pinecone MCP Server Guide](https://docs.pinecone.io/guides/opera
 
 ## Contributing
 
-This repo receives most updates as automated PRs from [`pinecone-io/skills`](https://github.com/pinecone-io/skills) on branches named `sync/skills-*`. A GitHub Action (`contextualize-skills.yml`) adapts the incoming files to Codex conventions before a maintainer reviews and merges. Manual edits are welcome too — the validators in `scripts/check_*.py` run on every PR and document the conventions.
+Skills are not authored here. They are authored in [`pinecone-io/skills`](https://github.com/pinecone-io/skills) and rendered for this plugin by `tools/build.py` against `targets/codex.yaml`, which holds every Codex-specific value. The sync workflow there opens a PR on the `sync/skills` branch for a maintainer to review and merge.
+
+That means edits to `skills/` in this repo are overwritten by the next sync. Change the skill in `pinecone-io/skills`, or change `targets/codex.yaml` if the difference is Codex-specific. Everything outside `skills/` is owned here, and the validators in `scripts/check_*.py` run on every PR and document the conventions.
 
 See [`docs/index.html`](./docs/index.html) (open it in a browser) for a full walkthrough of the build, validation, and release machinery.
 

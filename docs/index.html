@@ -128,7 +128,7 @@ hr { border: none; border-top: 1px solid var(--border); margin: 48px 0; }
 <body>
 <main>
 <h1>Pinecone Codex Plugin — Contributor Guide</h1>
-<p class="lede">How this repo is wired up: the sync pipeline from <code>pinecone-io/skills</code>, the contextualization bot, the validators, and the release workflow. Open this file in a browser — it is self-contained.</p>
+<p class="lede">How this repo is wired up: the sync pipeline from <code>pinecone-io/skills</code>, the validators, and the release workflow. Open this file in a browser — it is self-contained.</p>
 
 <nav class="toc" aria-label="Table of contents">
 <strong>Contents</strong>
@@ -136,7 +136,6 @@ hr { border: none; border-top: 1px solid var(--border); margin: 48px 0; }
   <li><a href="#overview">Overview</a></li>
   <li><a href="#layout">Repo layout</a></li>
   <li><a href="#sync">Sync pipeline (upstream → here)</a></li>
-  <li><a href="#contextualize">Contextualization workflow</a></li>
   <li><a href="#validators">Validators</a></li>
   <li><a href="#release">Release workflow</a></li>
   <li><a href="#spec">Codex plugin spec essentials</a></li>
@@ -148,31 +147,27 @@ hr { border: none; border-top: 1px solid var(--border); margin: 48px 0; }
 <h2 id="overview">1. Overview</h2>
 <p>
 Pinecone publishes one base skills library — <a href="https://github.com/pinecone-io/skills">pinecone-io/skills</a> — that is intentionally environment-agnostic.
-The base repo fans out to one downstream plugin repo per agentic IDE: Claude Code, Cursor, Gemini CLI, Kiro, and (this repo) Codex.
-Each downstream repo packages the skills into that IDE's plugin format and runs a "contextualize" GitHub Action to adapt incoming changes to the local conventions before a maintainer merges.
+The base repo fans out to one downstream plugin repo per agentic IDE: Claude Code, Cursor, and (this repo) Codex.
+Nothing rewrites a skill after it leaves the base repo. Every Codex-specific value — the bare skill names, the <code>codex_plugin:</code> source tag, the per-target wording — comes from <code>targets/codex.yaml</code> upstream, and <code>tools/build.py</code> renders the tree before it is ever copied here. Read a sync PR as content, not as a transform.
 </p>
 
 <div class="diagram">┌─────────────────────────┐
 │ pinecone-io/skills      │   author edits a skill, pushes to main
 │ (base, IDE-agnostic)    │
 └────────────┬────────────┘
+             │ tools/build.py renders skills/ + targets/codex.yaml
+             ▼
+┌─────────────────────────────────────────────────────────────────┐
+│ dist/codex/  — the finished tree, already in Codex conventions  │
+└────────────┬────────────────────────────────────────────────────┘
              │ sync-skills.yml (matrix over downstream repos)
              ▼
 ┌─────────────────────────────────────────────────────────────────┐
 │ Opens PR on:                                                    │
 │   pinecone-io/pinecone-claude-code-plugin                       │
 │   pinecone-io/pinecone-cursor-plugin                            │
-│   pinecone-io/gemini-cli-extension                              │
-│   pinecone-io/kiro-powers                                       │
 │   pinecone-io/pinecone-codex-plugin  ◄── this repo              │
-│ Branch: sync/skills-&lt;run_id&gt;                                    │
-└────────────────────────────┬────────────────────────────────────┘
-                             │ contextualize-skills.yml triggers
-                             ▼
-┌─────────────────────────────────────────────────────────────────┐
-│ Claude Code action reads the inlined Codex conventions, adapts  │
-│ skill files in-place, commits to the PR branch, posts a summary │
-│ comment, generates a per-branch test marketplace.               │
+│ Branch: sync/skills                                             │
 └────────────────────────────┬────────────────────────────────────┘
                              │ validate.yml runs on every PR
                              ▼
@@ -195,9 +190,8 @@ Each downstream repo packages the skills into that IDE's plugin format and runs 
 <tr><td><code>.agents/plugins/marketplace.json</code></td><td>Marketplace metadata so users can <code>codex plugin marketplace add pinecone-io/pinecone-codex-plugin</code>.</td></tr>
 <tr><td><code>.mcp.json</code></td><td>Bundled Pinecone MCP server config (<code>npx -y @pinecone-database/mcp</code>).</td></tr>
 <tr><td><code>skills/</code></td><td>One directory per skill. Each has a <code>SKILL.md</code>, optionally <code>references/*.md</code> and <code>scripts/*.py</code>.</td></tr>
-<tr><td><code>scripts/check_*.py</code></td><td>Validators. See <a href="#validators">§5</a>.</td></tr>
+<tr><td><code>scripts/check_*.py</code></td><td>Validators. See <a href="#validators">§4</a>.</td></tr>
 <tr><td><code>.github/workflows/validate.yml</code></td><td>Runs <code>check_all.py</code> on every PR and on pushes to <code>main</code>.</td></tr>
-<tr><td><code>.github/workflows/contextualize-skills.yml</code></td><td>Adapts incoming <code>sync/skills-*</code> PRs to Codex conventions.</td></tr>
 <tr><td><code>.github/workflows/release.yml</code></td><td>On merge to <code>main</code>, bumps version, updates CHANGELOG, tags release.</td></tr>
 <tr><td><code>README.md</code></td><td>User-facing install and usage docs.</td></tr>
 <tr><td><code>CHANGELOG.md</code></td><td>Version history, populated by <code>release.yml</code>.</td></tr>
@@ -207,47 +201,19 @@ Each downstream repo packages the skills into that IDE's plugin format and runs 
 
 <h2 id="sync">3. Sync pipeline (upstream → here)</h2>
 <p>
-The base repo's <code>.github/workflows/sync-skills.yml</code> fires on every push to <code>main</code> that touches <code>skills/**</code>, plus on manual <code>workflow_dispatch</code>. It diffs <code>HEAD~1..HEAD</code> (or — on dispatch — every file under <code>skills/</code>), copies the changed files into this repo, opens a PR on branch <code>sync/skills-&lt;run_id&gt;</code>, and labels it <code>skill-sync</code>.
+The base repo's <code>.github/workflows/sync-skills.yml</code> is dispatch-only. It renders every target with <code>uv run tools/build.py --all --check</code>, runs <code>tools/reconcile.py</code> against this repo to report what the sync is about to change, then <code>rsync -a --delete</code>s <code>dist/codex/skills/</code> over <code>skills/</code> here and opens a PR on branch <code>sync/skills</code>, labelled <code>skill-sync</code>.
 </p>
 <p>
-A <code>PLUGIN_SYNC_PAT</code> personal access token gives the upstream workflow push permission on this repo. The PR body lists the changed files and links to the upstream Actions run. The contextualize workflow takes it from there.
+The <code>--delete</code> matters: <code>skills/</code> is owned entirely by the base repo, so a file you add there by hand is removed by the next sync. Everything outside <code>skills/</code> — <code>.codex-plugin/</code>, <code>.agents/</code>, <code>.mcp.json</code>, <code>scripts/</code>, <code>docs/</code>, <code>README.md</code> — is owned here and the rsync never sees it.
+</p>
+<p>
+A <code>PLUGIN_SYNC_PAT</code> personal access token gives the upstream workflow push permission on this repo. The PR body carries the reconcile report and a <code>git checkout</code> plus <code>build.py</code> command that reproduces the diff byte for byte.
 </p>
 <div class="callout">
-<strong>Adding this repo to the matrix:</strong> once <code>pinecone-io/pinecone-codex-plugin</code> exists on GitHub, the upstream <code>sync-skills.yml</code> needs the repo added to two places — the <code>workflow_dispatch.inputs.target_repo</code> choice list and the <code>strategy.matrix.target</code> array. That edit lives in <code>pinecone-io/skills</code>, not here.
+<strong>Changing what lands here:</strong> edit the skill in <code>pinecone-io/skills</code>, or edit <code>targets/codex.yaml</code> there if the difference is Codex-specific. Both live upstream, not in this repo.
 </div>
 
-<h2 id="contextualize">4. Contextualization workflow</h2>
-<p>
-<code>.github/workflows/contextualize-skills.yml</code> triggers on every <code>pull_request</code> event (opened or synchronized), but the <code>if:</code> gate skips anything whose branch doesn't start with <code>sync/skills-</code>. A second guard skips runs whose last commit was authored by the bot itself, so re-pushes during contextualization don't loop.
-</p>
-<p>
-When the gates pass, the workflow invokes <code>anthropics/claude-code-action@v1</code> with a prompt that <em>inlines</em> the Codex conventions (no separate <code>CLAUDE.md</code>/<code>AGENTS.md</code> needed). The Claude action gets a tight allowed-tools whitelist: <code>Read, Write, Edit, Bash(git:*), Bash(gh pr comment:*), Bash(mv:*), Bash(python3:*)</code>.
-</p>
-<h3>What the bot changes</h3>
-<ul>
-  <li>Strips the <code>pinecone-</code> prefix from <code>name:</code> frontmatter values and from skill directory names.</li>
-  <li>Rewrites cross-skill references in skill bodies to the <code>pinecone:&lt;skill&gt;</code> invocation form.</li>
-  <li>Removes any <code>allowed-tools</code> frontmatter (Claude-only).</li>
-  <li>Removes any <code>AskUserQuestion</code> references (Claude-only tool name).</li>
-  <li>De-emphasizes <code>.env</code> fallback wording (Codex inherits the shell env).</li>
-  <li>Rewrites <code>source_tag=</code> literals in Python scripts to <code>codex_plugin:&lt;skill&gt;[_&lt;operation&gt;]</code>.</li>
-  <li>Runs <code>python3 scripts/check_all.py</code> and fixes anything it flags inside <code>skills/</code>.</li>
-</ul>
-<h3>What the bot does NOT touch</h3>
-<ul>
-  <li><code>.codex-plugin/</code>, <code>.agents/plugins/</code>, <code>.mcp.json</code>, <code>.github/</code>, <code>scripts/</code>, <code>README.md</code>, <code>CHANGELOG.md</code>, <code>docs/</code>, <code>LICENSE</code>.</li>
-  <li>Python logic inside <code>scripts/*.py</code> — only the <code>source_tag</code> string literal is rewritten.</li>
-  <li>The meaning of any skill — only structure, terminology, naming, and source-tag prefixes.</li>
-</ul>
-<h3>Test marketplace</h3>
-<p>
-After contextualization, a separate step generates <code>test-marketplace/.agents/plugins/marketplace.json</code> pointing at the PR's branch via a <code>git-subdir</code> source. A reviewer can install the PR by adding that path as a marketplace, exercising the exact plugin tree the PR ships.
-</p>
-<p>
-The release workflow deletes <code>test-marketplace/</code> on merge so it never ships to <code>main</code>.
-</p>
-
-<h2 id="validators">5. Validators</h2>
+<h2 id="validators">4. Validators</h2>
 <p>
 All validators are plain Python 3 — stdlib only, no <code>uv</code> or <code>pyyaml</code> needed in CI. Run the whole suite locally:
 </p>
@@ -275,7 +241,7 @@ All validators are plain Python 3 — stdlib only, no <code>uv</code> or <code>p
   <td><code>check_skills.py</code></td>
   <td>
     Every <code>skills/*/SKILL.md</code> has YAML frontmatter with <code>name</code> and <code>description</code>;
-    <code>name</code> matches the directory name and does NOT start with <code>pinecone-</code> (catches un-contextualized syncs);
+    <code>name</code> matches the directory name and does NOT start with <code>pinecone-</code> (catches a mis-rendered sync);
     no <code>allowed-tools</code> key (Claude-only);
     <code>description</code> is a single line, ≤ 1000 chars;
     body has no <code>AskUserQuestion</code> reference.
@@ -302,10 +268,10 @@ All validators are plain Python 3 — stdlib only, no <code>uv</code> or <code>p
 </tbody>
 </table>
 <div class="callout warn">
-<strong>If a validator fails in CI:</strong> the failure message names the file and the rule that tripped. Fix the file (don't relax the rule unless you're changing the conventions deliberately). Common culprits — incoming PR has <code>name: pinecone-foo</code> in a SKILL.md (the contextualize bot didn't run, or the gate skipped it), or a Python script kept its upstream <code>source_tag</code> prefix.
+<strong>If a validator fails in CI:</strong> the failure message names the file and the rule that tripped. Fix the file (don't relax the rule unless you're changing the conventions deliberately). Common culprits — a hand-edited SKILL.md whose <code>name:</code> no longer matches its directory, or a Python script carrying another plugin's <code>source_tag</code> prefix. If a <em>sync</em> PR trips either, the bug is in <code>targets/codex.yaml</code> upstream, not in the file here.
 </div>
 
-<h2 id="release">6. Release workflow</h2>
+<h2 id="release">5. Release workflow</h2>
 <p>
 <code>.github/workflows/release.yml</code> fires on <code>pull_request.types: [closed]</code> against <code>main</code> and only proceeds when <code>github.event.pull_request.merged == true</code>. Bump type is decided by PR labels:
 </p>
@@ -319,12 +285,11 @@ All validators are plain Python 3 — stdlib only, no <code>uv</code> or <code>p
   <li>Reads <code>.codex-plugin/plugin.json</code>, bumps the version, writes it back.</li>
   <li>Generates changelog bullets from <code>gh pr view --json commits --jq '.commits[].messageHeadline'</code>, filtering out <code>chore:</code> and create-pull-request entries.</li>
   <li>Inserts a <code>## [X.Y.Z] - YYYY-MM-DD</code> block after the <code># Changelog</code> header.</li>
-  <li>Deletes <code>test-marketplace/</code> if the contextualize workflow left one behind.</li>
   <li>Commits as <code>github-actions[bot]</code>, pushes the version-bump commit and a <code>v&lt;version&gt;</code> tag.</li>
   <li>Creates a GitHub release with auto-generated notes.</li>
 </ol>
 
-<h2 id="spec">7. Codex plugin spec essentials</h2>
+<h2 id="spec">6. Codex plugin spec essentials</h2>
 <h3><code>.codex-plugin/plugin.json</code> shape</h3>
 <pre><code>{
   "name": "pinecone",              // required, lowercase kebab-case
@@ -358,26 +323,26 @@ All validators are plain Python 3 — stdlib only, no <code>uv</code> or <code>p
     }
   ]
 }</code></pre>
-<p>For Git-backed entries the <code>source</code> object uses <code>"source": "git-subdir"</code> with <code>url</code>, <code>path</code>, and a <code>ref</code> or <code>sha</code>. The contextualize workflow's per-PR test marketplace uses that shape.</p>
+<p>For Git-backed entries the <code>source</code> object uses <code>"source": "git-subdir"</code> with <code>url</code>, <code>path</code>, and a <code>ref</code> or <code>sha</code>.</p>
 
-<h2 id="new-skill">8. Adding a new skill manually</h2>
-<p>Most skills land via the upstream sync. If you need to add one directly:</p>
+<h2 id="new-skill">7. Adding a new skill manually</h2>
+<p>Skills belong in <code>pinecone-io/skills</code>, and the next sync deletes anything added here by hand. Add a skill directly only for a throwaway local test:</p>
 <ol>
   <li>Create <code>skills/&lt;skill-name&gt;/SKILL.md</code>. The directory name is the slug (bare, no <code>pinecone-</code> prefix).</li>
   <li>Frontmatter must contain <code>name: &lt;same-as-directory&gt;</code> and a single-line <code>description</code>. No <code>allowed-tools</code> key.</li>
   <li>If the skill ships Python helpers, put them in <code>skills/&lt;skill-name&gt;/scripts/</code>. Every <code>Pinecone(...)</code> call that sets <code>source_tag=</code> must use <code>codex_plugin:&lt;skill&gt;[_&lt;operation&gt;]</code>.</li>
   <li>Run <code>python3 scripts/check_all.py</code>. Iterate until green.</li>
   <li>Update <code>README.md</code>'s skills table.</li>
-  <li>Open a PR. <code>validate.yml</code> will run; the contextualize workflow won't fire (branch isn't <code>sync/skills-*</code>). Merge once green and the release workflow will tag a new version.</li>
+  <li>Open a PR. <code>validate.yml</code> will run. Merge once green and the release workflow will tag a new version.</li>
 </ol>
 
-<h2 id="troubleshooting">9. Troubleshooting</h2>
+<h2 id="troubleshooting">8. Troubleshooting</h2>
 <table>
 <thead><tr><th>Symptom</th><th>Likely cause / fix</th></tr></thead>
 <tbody>
 <tr>
   <td><code>check_skills.py</code> fails: "name still has <code>pinecone-</code> prefix"</td>
-  <td>An upstream sync landed without the contextualize workflow running (the branch may not start with <code>sync/skills-</code>, or the bot's last commit caused the skip-if-bot guard to fire on a re-push). Re-run the workflow manually or edit the SKILL.md by hand.</td>
+  <td><code>targets/codex.yaml</code> upstream has the wrong <code>skill_name</code>. It must be <code>&quot;{slug}&quot;</code>, with no prefix. Fix it there and re-run the sync; editing the file here is undone by the next one.</td>
 </tr>
 <tr>
   <td><code>check_skills.py</code> fails: "<code>allowed-tools</code> is a Claude Code field"</td>
@@ -385,15 +350,11 @@ All validators are plain Python 3 — stdlib only, no <code>uv</code> or <code>p
 </tr>
 <tr>
   <td><code>check_source_tags.py</code> fails with <code>claude_code_plugin:</code> or <code>pinecone_skills:</code></td>
-  <td>The contextualize bot didn't rewrite a tag. Edit the offending <code>.py</code> file and change the prefix to <code>codex_plugin:</code>. Do not change the suffix.</td>
+  <td><code>targets/codex.yaml</code> upstream has the wrong <code>source_tag</code>. It must be <code>codex_plugin</code>. The suffix comes from the base script and is not per-target.</td>
 </tr>
 <tr>
   <td><code>check_links.py</code> fails on a <code>references/foo.md</code> path</td>
   <td>The reference file was moved or renamed; update the link or restore the file.</td>
-</tr>
-<tr>
-  <td>Contextualize workflow skipped on a sync PR</td>
-  <td>Check that the branch name starts with <code>sync/skills-</code> exactly. The skip-if-bot guard will also block runs whose last commit is authored by <code>github-actions[bot]</code>; push an empty commit as a human to re-trigger.</td>
 </tr>
 <tr>
   <td>Release ran but didn't tag</td>

@@ -31,7 +31,7 @@
   "interface": {
     "displayName": "Pinecone",
     "shortDescription": "Vector database skills and MCP for Codex",
-    "longDescription": "Bundle of Pinecone skills (quickstart, query, assistant, full-text-search, CLI, MCP reference, docs, help) plus the Pinecone MCP server. Build semantic search, RAG, and hybrid-search apps from Codex without leaving the editor.",
+    "longDescription": "Bundle of Pinecone skills (quickstart, query, assistant, full-text-search, CLI, MCP reference, docs, help, n8n) plus the Pinecone MCP server. Build semantic search, RAG, and hybrid-search apps from Codex without leaving the editor.",
     "developerName": "Pinecone",
     "category": "Productivity",
     "capabilities": ["Read", "Write"],
