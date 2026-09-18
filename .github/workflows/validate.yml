@@ -5,6 +5,9 @@ on:
   push:
     branches: [main]
 
+permissions:
+  contents: read
+
 jobs:
   validate:
     runs-on: ubuntu-latest
@@ -15,3 +18,9 @@ jobs:
           python-version: '3.12'
       - name: Run plugin validators
         run: python3 scripts/check_all.py
+      - name: Byte-compile Python scripts
+        run: python -m compileall -q scripts skills
+      - name: Lint Python scripts (ruff, error-level)
+        run: |
+          python -m pip install --upgrade pip ruff
+          ruff check --select E9,F63,F7,F82 scripts skills
