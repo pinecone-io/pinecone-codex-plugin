@@ -62,6 +62,16 @@ def main() -> int:
     if version and not SEMVER.match(version):
         fail(f"version {version!r} does not match semver X.Y.Z", errors)
 
+    # Required per OpenAI support (2026-09-21). Without it the plugin's skills and
+    # MCP server do not get a local executor, so the bundled scripts cannot run.
+    # It must be the boolean true, not the string "true".
+    if data.get("requires_local_executor") is not True:
+        fail(
+            "requires_local_executor must be present at the top level and set to true, "
+            f"got {data.get('requires_local_executor')!r}",
+            errors,
+        )
+
     for field in ("skills", "mcpServers", "apps", "hooks"):
         value = data.get(field)
         if isinstance(value, str):
