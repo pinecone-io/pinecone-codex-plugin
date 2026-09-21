@@ -44,6 +44,7 @@
       "Create a Pinecone assistant from the files in ./docs and ask it about authentication.",
       "Query my Pinecone index for relevant context on a topic."
     ],
-    "brandColor": "#10A37F"
+    "composerIcon": "./assets/icon.png",
+    "logo": "./assets/logo.png"
   }
 }
