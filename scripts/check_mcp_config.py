@@ -1,8 +1,10 @@
 #!/usr/bin/env python3
 """Validate bundled MCP config against the current Codex plugin docs.
 
-Codex plugin manifests use the `mcpServers` field to point at this file, but
-`.mcp.json` itself should contain either a direct server map or `mcp_servers`.
+The Codex plugin directory requires `.mcp.json` to be a JSON object with a
+top-level `mcpServers` map. An earlier version of this file required the
+snake_case `mcp_servers` instead, which is how a non-compliant config passed
+every check until the directory review caught it.
 
 Run from repo root:
     python3 scripts/check_mcp_config.py
@@ -18,12 +20,8 @@ MCP = REPO / ".mcp.json"
 
 
 def server_map(payload: dict) -> dict | None:
-    if "mcpServers" in payload:
-        return None
-    if "mcp_servers" in payload:
-        value = payload["mcp_servers"]
-        return value if isinstance(value, dict) else None
-    return payload
+    value = payload.get("mcpServers")
+    return value if isinstance(value, dict) else None
 
 
 def main() -> int:
@@ -44,11 +42,14 @@ def main() -> int:
         servers = {}
     else:
         servers = server_map(payload)
-        if "mcpServers" in payload:
-            errors.append("use `mcp_servers` or a direct server map, not `mcpServers`")
-        if servers is None:
-            errors.append("`mcp_servers` must be an object")
+        if "mcpServers" not in payload:
+            errors.append("`mcpServers` is required at the top level")
             servers = {}
+        elif servers is None:
+            errors.append("`mcpServers` must be an object")
+            servers = {}
+        if "mcp_servers" in payload:
+            errors.append("`mcp_servers` is not recognised; the key is `mcpServers`")
 
     if not servers:
         errors.append("no MCP servers configured")
