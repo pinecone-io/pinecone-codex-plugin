@@ -1,7 +1,7 @@
 {
   "name": "pinecone",
   "description": "Pinecone vector database integration for Codex. Streamline your Pinecone development with reusable skills for managing vector indexes, querying data, building RAG applications, and rapid prototyping. Includes the Pinecone MCP server for creating, describing, upserting, and searching indexes directly from Codex. Perfect for developers building semantic search, RAG applications, recommendation systems, and other vector-based applications with Pinecone.",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "author": {
     "name": "Pinecone",
     "url": "https://www.pinecone.io"
