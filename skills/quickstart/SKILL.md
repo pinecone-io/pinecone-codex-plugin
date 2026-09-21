@@ -8,12 +8,15 @@ description: Interactive Pinecone quickstart for new developers. Choose between 
 Welcome! This skill walks you through your first Pinecone experience using the tools available to you. In this quickstart,
 you will learn how to do a simple form of semantic search over some example data.
 
+Whenever this skill asks the user to choose between options, confirm a destructive step, or pick from a list, ask in plain prose, list the options, and wait for their answer before continuing.
+
 ## Prerequisites
 
 Before starting either path, verify the API key works by calling `list-indexes` via the Pinecone MCP. If it succeeds, proceed. If it fails, ask the user to set their key:
 
-- Terminal: `export PINECONE_API_KEY="your-key"`
-- Or create a `.env` file in the project root: `PINECONE_API_KEY=your-key`
+- Codex CLI: run `export PINECONE_API_KEY="your-key"` in the shell you start `codex` from. The bundled MCP server reads it from Codex's environment.
+- Codex Desktop on macOS: run `launchctl setenv PINECONE_API_KEY "your-key"`, then quit Codex fully and open it again.
+- For scripts, you can also use `uv run --env-file .env scripts/...`.
 
 Then retry `list-indexes` to confirm.
 
@@ -150,7 +153,7 @@ Tell the user:
 
 ## Path B: Assistant Quickstart
 
-Guide the user through the Pinecone Assistant workflow using the existing assistant skills:
+Guide the user through the Pinecone Assistant workflow using the existing pinecone:assistant skill:
 
 ### Step 1 – Check for Documents
 
@@ -166,7 +169,7 @@ Before anything else, ask the user if they have files to upload. Pinecone Assist
 
 Invoke `pinecone:assistant` or run (add `--env-file .env` if using a `.env` file):
 ```bash
-uv run ../pinecone:assistant/scripts/create.py --name my-assistant
+uv run ../assistant/scripts/create.py --name my-assistant
 ```
 
 Explain: The assistant is a fully managed RAG service — upload documents, ask questions, get cited answers.
@@ -175,7 +178,7 @@ Explain: The assistant is a fully managed RAG service — upload documents, ask 
 
 Invoke `pinecone:assistant` or run (add `--env-file .env` if using a `.env` file):
 ```bash
-uv run ../pinecone:assistant/scripts/upload.py --assistant my-assistant --source ./your-docs
+uv run ../assistant/scripts/upload.py --assistant my-assistant --source ./your-docs
 ```
 
 Explain: Pinecone handles chunking, embedding, and indexing automatically — no configuration needed.
@@ -184,7 +187,7 @@ Explain: Pinecone handles chunking, embedding, and indexing automatically — no
 
 Invoke `pinecone:assistant` or run (add `--env-file .env` if using a `.env` file):
 ```bash
-uv run ../pinecone:assistant/scripts/chat.py --assistant my-assistant --message "What are the main topics in these documents?"
+uv run ../assistant/scripts/chat.py --assistant my-assistant --message "What are the main topics in these documents?"
 ```
 
 Explain: Responses include citations with source file and page number.
@@ -192,7 +195,7 @@ Explain: Responses include citations with source file and page number.
 ### Next Steps for Assistant
 
 - Invoke `pinecone:assistant` to keep the assistant up to date as documents change
-- Use the assistant skill to retrieve raw context snippets for custom workflows
+- Use the pinecone:assistant skill to retrieve raw context snippets for custom workflows
 - Every assistant is also an MCP server — see https://docs.pinecone.io/guides/assistant/mcp-server
 
 ---
@@ -201,15 +204,11 @@ Explain: Responses include citations with source file and page number.
 
 **`PINECONE_API_KEY` not set**
 
-Terminal environments:
-```bash
-export PINECONE_API_KEY="your-key"
-```
-IDEs that don't inherit shell variables: create a `.env` file in the project root:
-```
-PINECONE_API_KEY=your-key
-```
-Then use `uv run --env-file .env` when running scripts. Restart your IDE/agent session after setting.
+- Codex CLI: run `export PINECONE_API_KEY="your-key"` in the shell you start `codex` from. The bundled MCP server reads it from Codex's environment.
+- Codex Desktop on macOS: run `launchctl setenv PINECONE_API_KEY "your-key"`, then quit Codex fully and open it again.
+- For scripts, you can also use `uv run --env-file .env scripts/...`.
+
+Restart your IDE or agent session after setting the key.
 
 **MCP tools not available**
 - Verify the Pinecone MCP server is configured in your IDE's MCP settings
