@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 # /// script
+# requires-python = ">=3.10"
 # dependencies = [
-#   "pinecone>=8.0.0",
+#   "pinecone==9.1.0",
 #   "typer>=0.15.0",
 # ]
 # ///
@@ -22,7 +23,7 @@ def main(
         typer.echo("Error: PINECONE_API_KEY environment variable not set", err=True)
         raise typer.Exit(1)
 
-    pc = Pinecone(api_key=api_key, source_tag="codex_plugin:quickstart_upsert")
+    pc = Pinecone(api_key=api_key, source_tag="codex_plugin:upsert")
 
     records = [
         # Health / feeling unwell
@@ -40,7 +41,7 @@ def main(
     ]
 
     idx = pc.Index(index)
-    idx.upsert_records(namespace, records)
+    idx.upsert_records(namespace=namespace, records=records)
     typer.echo(f"Upserted {len(records)} records into '{index}' (namespace: '{namespace}')")
 
 if __name__ == "__main__":
