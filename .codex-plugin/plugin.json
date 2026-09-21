@@ -26,6 +26,7 @@
     "bm25",
     "hybrid search"
   ],
+  "requires_local_executor": true,
   "skills": "./skills/",
   "mcpServers": "./.mcp.json",
   "interface": {
