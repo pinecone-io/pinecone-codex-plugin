@@ -89,7 +89,7 @@ Open Codex and start a new session. Then ask:
 Use Pinecone's quickstart to create an index, add sample data, and run my first search.
 ```
 
-Codex should invoke `pinecone:quickstart`, verify the MCP connection, create an integrated index, upsert sample records, and run a search.
+Codex should invoke `pinecone:quickstart`, verify the MCP connection, create a document index with integrated embedding, upsert sample documents, and search by meaning and by exact terms.
 
 ### Install `uv` (required for assistant and ingest scripts)
 
@@ -118,7 +118,7 @@ After installing, Codex will surface these skills. You can invoke them with `@pi
 | Skill | What it does |
 |---|---|
 | `pinecone:help` | Overview of every skill plus the prerequisites — start here on a fresh install. |
-| `pinecone:quickstart` | Step-by-step onboarding: create an integrated index, upsert data, run your first search. |
+| `pinecone:quickstart` | Step-by-step onboarding: create a document index, upsert data, and search by meaning and by exact terms. |
 | `pinecone:query` | Search integrated indexes using natural language via the Pinecone MCP. |
 | `pinecone:assistant` | Create, upload to, sync, chat with, and search a Pinecone Assistant. Natural-language driven. |
 | `pinecone:full-text-search` | Build a BM25 / hybrid full-text-search index — schema design, safe bulk ingestion, query construction. Needs the `pinecone` Python SDK 10.0.0 or later. |
@@ -139,6 +139,9 @@ The plugin ships the Pinecone MCP server (`@pinecone-database/mcp` via `npx`). O
 | `search-records` | Search records with optional filtering and reranking. |
 | `cascading-search` | Multi-stage cascading retrieval. |
 | `create-index-for-model` | Create an integrated index with a built-in embedding model. |
+| `create-document-index` | Create a document index whose text field supports search by meaning and by exact terms. |
+| `upsert-documents` | Insert or update documents in a document index. |
+| `search-document-index` | Search a document index by meaning or by exact terms. |
 | `upsert-records` | Insert or update records. |
 | `rerank-documents` | Rerank documents using a specified reranker. |
 | `search-docs` / `ask-question-about-pinecone` | Pinecone docs RAG (Inkeep). |
